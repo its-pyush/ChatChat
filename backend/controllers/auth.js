@@ -85,6 +85,7 @@ exports.signUp = async(req,res)=>{
         }
 
         const latestOtp = await OTP.findOne({email : email}).sort({createdAt: -1});
+        
         if(!latestOtp)
         {
             return res.status(404).json({
@@ -92,30 +93,31 @@ exports.signUp = async(req,res)=>{
                 message : " OTP not Found",
             })
         }
-        if(latestOtp !== otp)
+        if(latestOtp.otp !== otp)
         {
             return res.status(400).json({
                 success : false,
                 message : " OTP didn't match",
             })
         }
-        if(latestOtp === otp)
-{
+        
+        
         const hashPass = await bcrypt.hash(password,10);
         const newUser = await User.create({
             userName : userName,
             email : email,
-            password : hassPass,
+            password : hashPass,
         })
     return res.status(200).json({
         success : true,
         message : "Account created Succesfully",
         newUser : newUser,
     })
-}
+        
 
 
-    } catch (error) {
+    } 
+    catch (error) {
         console.log(error);
         return res.status(500).json({
         success : false,
