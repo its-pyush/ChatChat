@@ -1,9 +1,10 @@
-//otpSave API
+//otpSave API function
 
 const OTP = require("../models/otp"); // otp schema
 const User = require("../models/user"); // user schema
 const otpGenerator = require("otp-generator");// package for otp generation
 const bcrypt = require("bcrypt"); //. for hashing password
+const jwt = require("jsonwebtoken"); // token for the frontend
 exports.otpSave = async(req,res)=>
     {
     try {
@@ -61,7 +62,7 @@ exports.otpSave = async(req,res)=>
     }
 }
 
-//signup
+//signup function
 exports.signUp = async(req,res)=>{
     try {
         //fetch data
@@ -111,7 +112,6 @@ exports.signUp = async(req,res)=>{
     return res.status(200).json({
         success : true,
         message : "Account created Succesfully",
-        newUser : newUser,
     })
         
 
@@ -124,4 +124,65 @@ exports.signUp = async(req,res)=>{
         message : "Internal Server Issue",
     })
 }
+}
+
+//login function
+exports.logIn = async(req,res)=>{
+    try {
+        //fetch data from the request body
+        const {email,password} = req.body;
+        if(!email || ! password)
+        {
+            return res.status(400).json({
+                success : false,
+                message : "email or password not found!"
+            })
+        }
+        // validate user account
+        const user = await User.findOne({email : email});
+        if(!user){
+            return res.status(400).json({
+                success : false,
+                message : "Account not found !"
+            })
+        }
+        const payload = {
+            userId : user._id,
+            userName : user.userName,
+            email : user.email,
+
+        }
+
+
+        // validate password
+        if(await bcrypt.compare(password,user.password))
+        {
+
+            // make token and send to frontend
+        const token = jwt.sign(payload,process.env.JWT_SECRETKEY,{expiresIn:"7d"});
+        user.password = undefined; //security...
+        return res.status(200).json({
+            success : true,
+            message : "Logged In Successfully !",
+            user : user,
+            token : token,
+
+
+        })
+
+        }
+        else{
+            return res.status(403).json({
+                success : false,
+                message : "password didn't match !"
+            })
+        }
+    } catch (error) 
+    {
+        console.log(error);
+        return res.status(500).json({
+            success : false,
+            message : "error with Server !"
+        })
+    }
 }
